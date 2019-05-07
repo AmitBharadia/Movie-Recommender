@@ -9,7 +9,7 @@ Movie.find()
         movies.forEach(function(movie) {
             var url = new URL("http://www.omdbapi.com/");
             url.searchParams.append('t', movie.title); 
-            url.searchParams.append('apikey', 'f33e8c28');
+            url.searchParams.append('apikey', '');
            // console.log(url.href)
             axios.get(url.href)
             .then(response => {
