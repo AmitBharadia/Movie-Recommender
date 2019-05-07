@@ -26,20 +26,6 @@ app.use(express.static(__dirname + '/public'));
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
-// var userloginServer = "http://13.52.15.0:8000/testuser/";
-//var productCatalogueServer = "http://13.52.15.0:8000/testproduct/";
-// var cartServer = "http://13.52.15.0:8000/testcart/";
-// var orderServer = "http://13.52.15.0:8000/testorder/";
-// var paymentServer = "http://13.52.15.0:8000/testpayment/";
-// var reviewServer = "http://13.52.15.0:8000/testreview/";
-
-// var userloginServer = ;
-// var productCatalogueServer = "http://localhost:5004";
-// var cartServer = "http://localhost:5006";
-// var orderServer = "http://localhost:5003";
-// var paymentServer = "http://localhost:5007";
-// var reviewServer = "http://localhost:5005";
-
 var {userloginServer,productCatalogueServer,cartServer,orderServer,paymentServer,reviewServer,recommedServer,apprioriServer}=CONST;
 
 var userID = null;
@@ -119,8 +105,13 @@ app.get('/products', async function(request, response) {
 	var comedyMovies = await Filter
 		.aggregate([{$unwind : "$genre"},{$match : {genre : "Comedy"}},{$sort : { "imdbRating" :-1 } },{$limit : 8}])
 
-	var actionMovies = await Filter
-	.aggregate([{$unwind : "$genre"},{$match : {genre : "Action"}},{$sort : { "imdbRating" :-1 } },{$limit : 8}])
+	 var actionMovies = await Filter
+	 .aggregate([{$unwind : "$genre"},{$match : {genre : "Action"}},{$sort : { "imdbRating" :-1 } },{$limit : 6}])
+
+	var starWarsMovies=  await Filter.find({"movie_id":{$in:["33493","5378"]}})
+	//var starWarsMovies=  await Filter.find({"$or": {"movie_id" :{$in:["33493","5378"]} })
+	await starWarsMovies.push(...actionMovies);
+	
 
 	var animationMovies = await Filter
 	.aggregate([{$unwind : "$genre"},{$match : {genre : "Animation"}},{$sort : { "imdbRating" :-1 } },{$limit : 8}])
@@ -135,15 +126,15 @@ app.get('/products', async function(request, response) {
 	//console.log("animation Movies:", animationMovies);
 	//console.log("fantasy Movies:", fantasyMovies);
 	if(isLoggedIn)	
-	response.render('./main/catalog', {products: topMovies,
-		topMovies: topMovies,
-		recentMovies: recentMovies,
-		comedyMovies: comedyMovies,
-		actionMovies: actionMovies,
-		animationMovies:animationMovies,
-		fantasyMovies:fantasyMovies,
-		login: isLoggedIn, 
-		cartQuantity: cartQuantity});
+		response.render('./main/catalog', {products: topMovies,
+			topMovies: topMovies,
+			recentMovies: recentMovies,
+			comedyMovies: comedyMovies,
+			actionMovies: starWarsMovies,
+			animationMovies:animationMovies,
+			fantasyMovies:fantasyMovies,
+			login: isLoggedIn, 
+			cartQuantity: cartQuantity});
 	else
 	response.render('user/login')
 
@@ -179,7 +170,7 @@ app.get('/', function(request, response) {
 	axios.get(productCatalogueServer+ "/products")
 	.then(res=>{
 		var products_array = res.data;
-		response.render('./main/catalog', {products: products_array, login: isLoggedIn, cartQuantity: cartQuantity});
+		response.redirect("/products");
 	}).catch(e=>{
 		console.log("Error in /:" ,err );
 	})
@@ -417,10 +408,12 @@ function caluclateTotal(cart) {
 }
 
 function updateTheCart(cart, callback) {
+	cart.Total="0";
 	axios.put(cartServer+ "/carts",JSON.stringify(cart))
 	.then((res)=>{
 		cart= res.data;
 		cartQuantity = cart.Products.length;
+	
 		callback();
 	}).catch(e=>{
 		console.log("Error in updateTheCart :" +e);
@@ -433,7 +426,7 @@ app.get('/logout', function(request, response) {
 		cart = null;
 		cartQuantity = 0;
 		userID = null;
-		response.redirect('/products');
+		response.redirect('/signin');
 	});
 });
 
